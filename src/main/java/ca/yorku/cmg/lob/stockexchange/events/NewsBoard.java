@@ -15,24 +15,26 @@ import ca.yorku.cmg.lob.security.SecurityList;
 import ca.yorku.cmg.lob.stockexchange.tradingagent.INewsObserver;
 
 /**
- * A NewsBoard object generates and shares financial/economic events that affect specific securities 
+ * A NewsBoard object generates and shares financial/economic events that affect specific securities.
  */
 public class NewsBoard {
 
-	//Events are queued ordered by time
+	// Events are queued, ordered by time
 	private PriorityQueue<Event> eventQueue = new PriorityQueue<>((e1, e2) -> Long.compare(e1.getTime(), e2.getTime()));
 
+	// A list to hold registered observers (TradingAgents)
 	private List<INewsObserver> observers = new ArrayList<>();
 
 	private SecurityList securities;
 
+	// Allowed event values
 	private static final Set<String> VALID_EVENTS = new HashSet<>(Arrays.asList("Good", "Bad"));
-	
+
 	public NewsBoard(SecurityList x) {
 		this.securities = x;
 	}
-	
-    	/**
+
+	/**
 	 * Load events from file. Format: [Time, Relevant Ticker, EventType], where EventType is one of "Good" or "Bad".
 	 * @param filePath The path of the file.
 	 */
@@ -40,8 +42,8 @@ public class NewsBoard {
 		String line;
 		String delimiter = ","; // Assuming the CSV is comma-separated
 
-		try (BufferedReader breader = new BufferedReader(new FileReader(filePath))) {
-			while ((line = breader.readLine()) != null) {
+		try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+			while ((line = br.readLine()) != null) {
 				String[] values = line.split(delimiter);
 
 				// Ensure the line has exactly two columns
@@ -54,7 +56,7 @@ public class NewsBoard {
 				String ticker = values[1].trim();
 				String event = values[2].trim();
 
-				// Validating the event
+				// Validate the event
 				if (!VALID_EVENTS.contains(event)) {
 					System.err.println("Invalid event value: " + event + " in line: " + line);
 					continue;
@@ -86,27 +88,27 @@ public class NewsBoard {
 		}
 	}
 
-	// Get the event at time time
+	// Get the event at a specific time
 	/**
-	 * Returns the event that happened at time {@code time}
+	 * Returns the event that happened at time {@code time}.
 	 * @param time The time at which the event happened.
-	 * @return The event that happened at that time, or {@code null} if no event happened at that time. 
+	 * @return The event that happened at that time, or {@code null} if no event happened at that time.
 	 */
 	public Event getEventAt(long time) {
 		PriorityQueue<Event> clonedQueue = new PriorityQueue<>(eventQueue);
 		Event e = null;
-		
+
 		while (!clonedQueue.isEmpty()) {
 			long next = clonedQueue.peek().getTime();
 			if (time > next) {
 				clonedQueue.poll();
 			} else if (time < next) {
-				return(null);
-			} else {//time == next
-				return(clonedQueue.poll());
+				return null;
+			} else { // time == next
+				return clonedQueue.poll();
 			}
 		}
-		return (e);
+		return e;
 	}
 
 	/**
@@ -129,11 +131,11 @@ public class NewsBoard {
 	 * Run the event list and send notifications to all registered observers.
 	 */
 	public void runEventsList() {
-		// Notify all registered observers abouts events located in the queue
+		// Notify all registered observers (TradingAgents) about the events in the queue
 		while (!eventQueue.isEmpty()) {
 			Event event = eventQueue.poll();
 			for (INewsObserver observer : observers) {
-				observer.update(event); // Notifies the observer about the event
+				observer.update(event); // Notify observer about the event (push model)
 			}
 		}
 	}
